@@ -33,8 +33,8 @@ http.createServer(function(req, res) {
       items: [
         'Item 0',
         'Item 1',
-        'Item </scRIpt>\u2028',
-        'Item <!--inject!-->\u2029',
+        'Item 2',
+        'Item 3',
       ],
     }
 
