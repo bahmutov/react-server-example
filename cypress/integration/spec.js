@@ -61,18 +61,20 @@ it('disables component methods from createReactClass', () => {
   cy.get('button').should('be.disabled')
 })
 
-it('calls createReactClass', () => {
-  let createReactClass
+it('how to know if componentDidMount was called', () => {
+  let componentDidMountSet
   cy.window().then(win => {
+    let createReactClass
     Object.defineProperty(win, 'createReactClass', {
       get () {
         return definition => {
-          definition.componentDidMount = () => null
+          definition.componentDidMount = cy.stub().as('componentDidMount')
+          componentDidMountSet = true
           return createReactClass(definition)
         }
       },
       set (fn) {
-        createReactClass = cy.spy(fn).as('create')
+        createReactClass = fn
       }
     })
   })
@@ -82,6 +84,36 @@ it('calls createReactClass', () => {
       cy.state('document').write(html)
     })
 
-  cy.waitUntil(() => Boolean(createReactClass))
-  cy.get('@create').should('have.been.calledOnce')
+  // wait until custom assertion passes
+  cy.wrap(null).should(() => expect(componentDidMountSet).to.be.true)
+  // now the alias should exist
+  cy.get('@componentDidMount').should('have.been.calledOnce')
+})
+
+it('calls componentDidMount no-op', () => {
+  let componentDidMountSet
+
+  cy.window().then(win => {
+    let createReactClass
+    Object.defineProperty(win, 'createReactClass', {
+      get () {
+        return definition => {
+          definition.componentDidMount = cy.stub().as('componentDidMount')
+          componentDidMountSet = true
+          return createReactClass(definition)
+        }
+      },
+      set (fn) {
+        createReactClass = fn
+      }
+    })
+  })
+  cy.request('/')
+    .its('body')
+    .then(html => {
+      cy.state('document').write(html)
+    })
+
+  cy.waitUntil(() => cy.wrap(componentDidMountSet))
+  cy.get('@componentDidMount').should('have.been.calledOnce')
 })
