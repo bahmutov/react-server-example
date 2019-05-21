@@ -2,6 +2,13 @@
 // https://on.cypress.io/intelligent-code-completion
 /// <reference types="Cypress" />
 
+beforeEach(() => {
+  // clear the application's document
+  // before pasting new HTML there
+  const doc = cy.state('document')
+  doc.body.innerHTML = ''
+})
+
 it('renders 5 items on the server', () => {
   cy.request('/')
     .its('body')
@@ -27,9 +34,9 @@ it('skips client-side bundle', () => {
   cy.get('li').should('have.length', 4)
 })
 
-it.only('disables component methods from createReactClass', () => {
-  let createReactClass
+it('disables component methods from createReactClass', () => {
   cy.window().then(win => {
+    let createReactClass
     Object.defineProperty(win, 'createReactClass', {
       get () {
         return definition => {
@@ -47,8 +54,34 @@ it.only('disables component methods from createReactClass', () => {
     .then(html => {
       cy.state('document').write(html)
     })
+
   cy.get('li').should('have.length', 4)
   // since we disabled componentDidMount the button should
   // never become enabled
   cy.get('button').should('be.disabled')
+})
+
+it('calls createReactClass', () => {
+  let createReactClass
+  cy.window().then(win => {
+    Object.defineProperty(win, 'createReactClass', {
+      get () {
+        return definition => {
+          definition.componentDidMount = () => null
+          return createReactClass(definition)
+        }
+      },
+      set (fn) {
+        createReactClass = cy.spy(fn).as('create')
+      }
+    })
+  })
+  cy.request('/')
+    .its('body')
+    .then(html => {
+      cy.state('document').write(html)
+    })
+
+  cy.waitUntil(() => Boolean(createReactClass))
+  cy.get('@create').should('have.been.calledOnce')
 })
