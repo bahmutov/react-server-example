@@ -1,4 +1,4 @@
-react-server-example
+react-server-example [![CircleCI](https://circleci.com/gh/bahmutov/react-server-example.svg?style=svg)](https://circleci.com/gh/bahmutov/react-server-example)
 --------------------
 
 Forked from [mhart/react-server-example](https://github.com/mhart/react-server-example)
