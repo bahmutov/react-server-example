@@ -2,12 +2,16 @@
 // https://on.cypress.io/intelligent-code-completion
 /// <reference types="Cypress" />
 
-beforeEach(() => {
-  // clear the application's document
-  // before pasting new HTML there
+/**
+ * clears the application's document
+ * before pasting new HTML there
+ */
+const resetDocument = () => {
   const doc = cy.state('document')
   doc.body.innerHTML = ''
-})
+}
+
+beforeEach(resetDocument)
 
 it('renders 5 items on the server', () => {
   cy.request('/')
@@ -119,10 +123,21 @@ it('calls componentDidMount no-op', () => {
 })
 
 it('renders same application after hydration', () => {
+  // technical detail - removes any stubs from previous tests
+  // since our application iframe does not get reset
+  // (there is no "cy.visit" call to reset it)
+  const win = cy.state('window')
+  delete win.createReactClass
+
+  let pageHtml
   cy.request('/')
     .its('body')
     .then(html => {
-      cy.state('document').write(html)
+      pageHtml = html
+      // remove bundle script to only have static HTML
+      cy.state('document').write(
+        html.replace('<script src="/bundle.js"></script>', '')
+      )
     })
 
   cy.get('li').should('have.length', 4)
@@ -135,6 +150,13 @@ it('renders same application after hydration', () => {
     // we should remove it before comparing to hydrated HTML
     .then(html => (staticHTML = html.replace(' disabled=""', '')))
 
+    // now mount the full page and let it hydrate
+    .then(resetDocument)
+    .then(() => {
+      cy.state('document').write(pageHtml)
+    })
+
+  // now the page should be live client-side
   cy.get('button').should('be.enabled')
 
   cy.get('#content')
