@@ -117,3 +117,29 @@ it('calls componentDidMount no-op', () => {
   cy.waitUntil(() => cy.wrap(componentDidMountSet))
   cy.get('@componentDidMount').should('have.been.calledOnce')
 })
+
+it('renders same application after hydration', () => {
+  cy.request('/')
+    .its('body')
+    .then(html => {
+      cy.state('document').write(html)
+    })
+
+  cy.get('li').should('have.length', 4)
+  cy.get('button').should('be.disabled')
+
+  let staticHTML
+  cy.get('#content')
+    .invoke('html')
+    // static HTML before hydration has the "disabled" button attribute
+    // we should remove it before comparing to hydrated HTML
+    .then(html => (staticHTML = html.replace(' disabled=""', '')))
+
+  cy.get('button').should('be.enabled')
+
+  cy.get('#content')
+    .invoke('html')
+    .then(html => {
+      expect(html).to.equal(staticHTML)
+    })
+})
